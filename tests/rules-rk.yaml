@@ -1,0 +1,61 @@
+# These two notations are equivalent:
+# exampleprop: [ref, x, d, ref]
+# exampleprop:
+#   patterns: ['^exampleprop$']
+#   struct: [ref, x, d, ref]
+#
+# If property name matches pattern, struct is applied for dereferencing phandles
+# If no struct is given, consider struct is dynamic:
+#  - first element is a ref
+#  - if property being parsed is named 'clock', then number of cells is indicated by '#clock-cells' property of referenced object
+#  - cells follow ref and are kept as numbers
+#  - after cells comes next ref
+address:
+  patterns: ['interrupt-parent', 'operating-points-v2']
+reg: [x, x, d, x]
+cpu-idle-states:
+  patterns: ['cpu-idle-states']
+  struct: [ref, ref]
+clock:
+  patterns: ['^clocks$', '-clocks$']
+io-channel:
+  patterns: ['^io-channels$']
+power-domain:
+  patterns: ['^power-domains$']
+pm_qos:
+  patterns: ['^pm_qos$']
+  struct: [ref]
+thermal-sensor:
+  patterns: ['^thermal-sensors$']
+trip: [ref]
+cooling:
+  patterns: ['^cooling-device$']
+dma:
+  patterns: ['^dmas$']
+phy:
+  patterns: ['^phys$']
+reset:
+  patterns: ['^resets$']
+iommmu:
+  patterns: ['^iommus$']
+gpio:
+  patterns: ['^gpios?$', '-gpios?$']
+pwm:
+  patterns: ['^pwms$']
+devfreq-events: [ref]
+interrupts: [d, d, d]
+interrupt-affinity: [ref]
+remote-endpoint: [ref]
+ports: [ref]
+supply:
+  patterns: ['.*-supply$']
+  struct: [ref]
+sound-dai: [ref]
+pinctrl:
+  patterns: ['^pinctrl-']
+  struct: [ref, ref, ref, ref, ref]
+rockchip,pins:
+  patterns: ['^rockchip,pins$']
+  struct: [d, d, d, ref]
+rockchip,pmu: [ref]
+rockchip,grf: [ref]
