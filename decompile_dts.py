@@ -4,6 +4,7 @@ import json
 import re
 from dts_parser import parse_dts_content
 from parse_dts_symbols import parse_dts_symbols
+from dereference_phandles import dereference_phandles
 
 def load_yaml_rules(yaml_content):
     """Load dereferencing rules from YAML content."""
@@ -22,61 +23,6 @@ def load_yaml_rules(yaml_content):
     
     return rules
 
-
-def dereference_phandles(dts, symbols, rules):
-    """Restore references in the DTS structure."""
-    def resolve_property(prop, value):
-        """Resolve property references based on rules."""
-        for rule_name, rule in rules.items():
-            patterns = rule.get('patterns', [])
-            struct = rule.get('struct', 'dynamic')
-            for pattern in patterns:
-                if re.match(pattern, prop):
-                    return resolve_struct(value, struct)
-        # Default to dynamic resolution if no patterns match
-        return resolve_struct(value, 'dynamic')
-    
-    def resolve_struct(value, struct):
-        """Resolve a property value based on its struct."""
-        if not isinstance(value, list):
-            value = [value]  # Ensure value is a list for processing
-        resolved = []
-        if struct == 'dynamic':
-            i = 0
-            while i < len(value):
-                # Check if value[i] is a reference (phandle) and resolve it
-                if isinstance(value[i], int):  # If the value is an integer (phandle)
-                    ref = symbols.get(value[i], hex(value[i]))  # Try to resolve using symbols
-                    resolved.append(f"&{ref.lstrip('/')}" if ref.startswith("/") else ref)
-                else:
-                    resolved.append(value[i])
-                i += 1
-        else:
-            # Handle fixed structs (e.g., rockchip,pins)
-            for idx, item in enumerate(struct):
-                if idx >= len(value):
-                    break
-                if item == "ref":
-                    # Resolve phandle to a symbolic reference
-                    ref = symbols.get(value[idx], hex(value[idx])) if isinstance(value[idx], int) else value[idx]
-                    resolved.append(f"&{ref.lstrip('/')}" if ref.startswith("/") else ref)
-                else:
-                    resolved.append(value[idx])
-        return resolved
-    
-    def process_node(node):
-        """Recursively process a node."""
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if isinstance(value, dict):
-                    process_node(value)
-                elif isinstance(value, list):
-                    node[key] = [resolve_property(key, v) if isinstance(v, (int, list)) else v for v in value]
-                else:
-                    node[key] = resolve_property(key, value) if isinstance(value, (int, list)) else value
-
-    process_node(dts)
-    return dts
 
 def generate_restored_dts(dts):
     """Generate DTS file content from the restored structure."""
