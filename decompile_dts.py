@@ -46,16 +46,15 @@ if __name__ == "__main__":
         yaml_content = f.read()
 
     # Load symbols and rules
-    symbols = parse_dts_symbols(dts_content)
+    phandle_to_path, path_to_symbol = parse_dts_symbols(dts_content)
     rules = load_yaml_rules(yaml_content)
 
     # Parse DTS into a structured format (JSON or dictionary)
     dts = parse_dts_content(dts_content)
 
     # Restore references
-    restored_dts = dereference_phandles(dts, symbols, rules)
+    restored_dts = dereference_phandles(dts, phandle_to_path, path_to_symbol, rules)
 
     # Generate output DTS
     output_dts = generate_restored_dts(restored_dts)
     print(output_dts)
-    #print(json.dumps(symbols, indent=2))
