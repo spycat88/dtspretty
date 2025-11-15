@@ -57,5 +57,7 @@ pinctrl:
 rockchip,pins:
   patterns: ['^rockchip,pins$']
   struct: [d, d, d, ref]
-rockchip,pmu: [ref]
-rockchip,grf: [ref]
+rockchip-ref:
+  patterns: ['^rockchip,(cpu|pmu|grf|codec)$']
+#rockchip,pmu: [ref]
+#rockchip,grf: [ref]

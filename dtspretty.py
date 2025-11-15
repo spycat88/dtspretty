@@ -34,9 +34,16 @@ if __name__ == "__main__":
     parser.add_argument(metavar="/path/to/decompiled.dts", dest="src", help="input file")
     args = parser.parse_args()
 
-    # Load DTS content (decompiled)
-    with open(args.src, "r") as f:
-        dts_content = f.read()
+    if args.src.endswith(".dtb"):
+        # Convert DTB to DTS before running own parser
+        import fdt
+        with open(args.src, "rb") as f:
+            dt = fdt.parse_dtb(f.read())
+            dts_content = dt.to_dts(2)
+    else:
+        # Load DTS content (decompiled)
+        with open(args.src, "r") as f:
+            dts_content = f.read()
 
     # Load YAML rules
     with open(args.rules, "r") as f:
