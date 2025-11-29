@@ -65,8 +65,20 @@ def dereference_phandles(dts, phandle_to_path, path_to_symbol, rules):
                 while type(clock_cells) == list:
                     clock_cells = clock_cells[0]
 
+                # Extract the data cells (pin number and flags for GPIO)
+                data_cells = value[i + 1 : i + 1 + clock_cells]
+
+                # Handle GPIO flags: resolve 0 to GPIO_ACTIVE_HIGH and 1 to GPIO_ACTIVE_LOW
+                if rule_name == 'gpio' and clock_cells >= 2:
+                    flags_index = clock_cells - 1
+                    flags_value = data_cells[flags_index]
+                    if flags_value == 0:
+                        data_cells[flags_index] = "GPIO_ACTIVE_HIGH"
+                    elif flags_value == 1:
+                        data_cells[flags_index] = "GPIO_ACTIVE_LOW"
+
                 # Group the reference and the next 'clock_cells' items
-                group = [ref_symbol] + value[i + 1 : i + 1 + clock_cells]
+                group = [ref_symbol] + data_cells
                 resolved.append(group)
 
                 # Skip the processed items
