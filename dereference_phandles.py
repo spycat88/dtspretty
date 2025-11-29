@@ -1,5 +1,12 @@
 import re, sys
 
+ROCKCHIP_PIN_MACROS = {
+    0: "RK_PA0", 1: "RK_PA1", 2: "RK_PA2", 3: "RK_PA3", 4: "RK_PA4", 5: "RK_PA5", 6: "RK_PA6", 7: "RK_PA7",
+    8: "RK_PB0", 9: "RK_PB1", 10: "RK_PB2", 11: "RK_PB3", 12: "RK_PB4", 13: "RK_PB5", 14: "RK_PB6", 15: "RK_PB7",
+    16: "RK_PC0", 17: "RK_PC1", 18: "RK_PC2", 19: "RK_PC3", 20: "RK_PC4", 21: "RK_PC5", 22: "RK_PC6", 23: "RK_PC7",
+    24: "RK_PD0", 25: "RK_PD1", 26: "RK_PD2", 27: "RK_PD3", 28: "RK_PD4", 29: "RK_PD5", 30: "RK_PD6", 31: "RK_PD7"
+}
+
 def dereference_phandles(dts, phandle_to_path, path_to_symbol, rules):
     """Restore references in the DTS structure following rules."""
     def resolve_property(prop, value):
@@ -22,7 +29,7 @@ def dereference_phandles(dts, phandle_to_path, path_to_symbol, rules):
         while i < len(value):
             if static_struct:
                 tmp = []
-                for j in static_struct:
+                for idx, j in enumerate(static_struct):
                     if i >= len(value):
                         continue
                     if j == 'ref':
@@ -30,7 +37,18 @@ def dereference_phandles(dts, phandle_to_path, path_to_symbol, rules):
                         ref_symbol = f"&{path_to_symbol.get(ref_path, ref_path.lstrip('/'))}"
                         tmp.append(ref_symbol)
                     elif j == 'd':
-                        tmp.append(str(value[i]))
+                        val = value[i]
+
+                        if rule_name == 'rockchip,pins':
+                            if idx == 1: # Second cell: Pin number (0-31)
+                                pin_macro = ROCKCHIP_PIN_MACROS.get(val, None)
+                                tmp.append(pin_macro if pin_macro else str(val))
+                            elif idx == 2 and val == 0: # Third cell: Function index (0=RK_FUNC_GPIO)
+                                tmp.append("RK_FUNC_GPIO")
+                            else: # First (bank) or other 'd' cell
+                                tmp.append(str(val))
+                        else:
+                            tmp.append(str(val))
                     elif j == 'x':
                         tmp.append(hex(value[i]))
                     else:
@@ -68,8 +86,15 @@ def dereference_phandles(dts, phandle_to_path, path_to_symbol, rules):
                 # Extract the data cells (pin number and flags for GPIO)
                 data_cells = value[i + 1 : i + 1 + clock_cells]
 
-                # Handle GPIO flags: resolve 0 to GPIO_ACTIVE_HIGH and 1 to GPIO_ACTIVE_LOW
+                # Handle GPIO properties (dynamic struct, #gpio-cells=2)
                 if rule_name == 'gpio' and clock_cells >= 2:
+                    # Rockchip pin macro resolution (first data cell: pin number)
+                    pin_number = data_cells[0]
+                    pin_macro = ROCKCHIP_PIN_MACROS.get(pin_number, None)
+                    if pin_macro:
+                        data_cells[0] = pin_macro
+
+                    # GPIO flag resolution (last data cell: flags)
                     flags_index = clock_cells - 1
                     flags_value = data_cells[flags_index]
                     if flags_value == 0:
